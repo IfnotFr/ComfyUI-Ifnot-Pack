@@ -12,7 +12,7 @@ class FaceCrop:
     def INPUT_TYPES(cls):
         return {
             "required": {
-                "images": ("IMAGE",),
+                "image": ("IMAGE",),
                 "width": ("INT",),
                 "height": ("INT",),
                 "zoom_factor": ("FLOAT",),
@@ -25,7 +25,7 @@ class FaceCrop:
     FUNCTION = "face_crop"
 
     def face_crop(
-        self, images, width, height, zoom_factor, top_offset, extra_pnginfo=None
+        self, image, width, height, zoom_factor, top_offset, extra_pnginfo=None
     ):
         """
         Main entry point of the node.
@@ -40,7 +40,7 @@ class FaceCrop:
         )
 
         output_cropped_images = []
-        for image_torch in images:
+        for image_torch in image:
             image = self._torch_to_numpy(image_torch)
             landmarks = self._get_face_landmarks(face_mesh, image)
 
@@ -81,15 +81,21 @@ class FaceCrop:
 
                 # Convert to torch
                 cropped_image_torch = self._convert_to_torch(final_resized)
-                output_cropped_images.append(cropped_image_torch)
 
                 # Store extra PNG info (if needed)
                 # extra_pnginfo["angle"] = angle
-            else:
-                output_cropped_images.append(image_torch)
 
-        face_mesh.close()
-        return (output_cropped_images,)
+                # Close the face mesh
+                face_mesh.close()
+
+                # Return the cropped image
+                return (cropped_image_torch.unsqueeze(0),)
+            else:
+                # Close the face mesh
+                face_mesh.close()
+
+                # Return the original image
+                return (image_torch.unsqueeze(0),)
 
     def _torch_to_numpy(self, image_torch):
         """Convert a Torch image [C, H, W] to a NumPy RGB image [H, W, C]."""
