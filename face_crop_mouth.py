@@ -19,7 +19,7 @@ class FaceCropMouth:
             "hidden": {"extra_pnginfo": "EXTRA_PNGINFO"},
         }
 
-    RETURN_TYPES = ("IMAGE", "MASK")
+    RETURN_TYPES = ("IMAGE", "MASK", "IMAGE", "IMAGE")
     FUNCTION = "face_crop_mouth"
 
     def face_crop_mouth(
