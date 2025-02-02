@@ -13,6 +13,8 @@ class FaceCropMouth:
             "required": {
                 "crop_images": ("IMAGE",),
                 "reference_images": ("IMAGE",),
+                "move_images_1": ("IMAGE",),
+                "move_images_2": ("IMAGE",),
             },
             "hidden": {"extra_pnginfo": "EXTRA_PNGINFO"},
         }
@@ -20,12 +22,21 @@ class FaceCropMouth:
     RETURN_TYPES = ("IMAGE", "MASK")
     FUNCTION = "face_crop_mouth"
 
-    def face_crop_mouth(self, crop_images, reference_images, extra_pnginfo=None):
+    def face_crop_mouth(
+        self,
+        crop_images,
+        reference_images,
+        move_images_1,
+        move_images_2,
+        extra_pnginfo=None,
+    ):
         """
         Main entry point of the node.
         """
         crop_image = self._torch_to_numpy(crop_images[0])
         reference_image = self._torch_to_numpy(reference_images[0])
+        move_image_1 = self._torch_to_numpy(move_images_1[0])
+        move_image_2 = self._torch_to_numpy(move_images_2[0])
 
         mp_face_mesh = mp.solutions.face_mesh
         face_mesh = mp_face_mesh.FaceMesh(
@@ -57,6 +68,8 @@ class FaceCropMouth:
 
         # -- Align the mouth of the image to be cropped with the reference
         cropped_image = self._align_mouth(crop_image, (cx, cy), (rx, ry))
+        move_image_1 = self._align_mouth(move_image_1, (cx, cy), (rx, ry))
+        move_image_2 = self._align_mouth(move_image_2, (cx, cy), (rx, ry))
 
         # --- 2nd face_mesh on the aligned image to detect the mouth in the new position
         aligned_landmarks = self._get_face_landmarks(face_mesh, cropped_image)
@@ -74,9 +87,16 @@ class FaceCropMouth:
 
         cropped_image_torch = self._numpy_to_torch(cropped_image)
         mask_torch = self._numpy_to_torch(mouth_mask)
+        move_image_1_torch = self._numpy_to_torch(move_image_1)
+        move_image_2_torch = self._numpy_to_torch(move_image_2)
 
         # Return the cropped image
-        return (cropped_image_torch.unsqueeze(0), mask_torch.unsqueeze(0))
+        return (
+            cropped_image_torch.unsqueeze(0),
+            mask_torch.unsqueeze(0),
+            move_image_1_torch.unsqueeze(0),
+            move_image_2_torch.unsqueeze(0),
+        )
 
     def _torch_to_numpy(self, image_torch):
         """Convert a Torch image [C, H, W] to a NumPy RGB image [H, W, C]."""
